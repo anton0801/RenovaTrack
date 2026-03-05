@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23788.4" systemVersion="24D2059" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="BudgetItem" representedClassName=".BudgetItem" syncable="YES">
+        <attribute name="category" attributeType="String"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="planned" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="spent" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="project" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="budgetItems" inverseEntity="Project"/>
+    </entity>
+    <entity name="CalendarTask" representedClassName=".CalendarTask" syncable="YES">
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="notificationID" attributeType="String"/>
+        <attribute name="status" attributeType="String"/>
+        <attribute name="title" attributeType="String"/>
+        <relationship name="project" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="calendarTasks" inverseEntity="Project"/>
+    </entity>
+    <entity name="Contractor" representedClassName=".Contractor" syncable="YES">
+        <attribute name="contractAmount" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="phone" attributeType="String"/>
+        <attribute name="rating" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="role" attributeType="String"/>
+        <relationship name="project" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="contractors" inverseEntity="Project"/>
+    </entity>
+    <entity name="Project" representedClassName=".Project" syncable="YES">
+        <attribute name="address" attributeType="String"/>
+        <attribute name="areaSqM" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="coverPhotoData" optional="YES" attributeType="Binary"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endDate" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="renovationType" attributeType="String"/>
+        <attribute name="startDate" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="status" attributeType="String"/>
+        <attribute name="totalBudget" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="budgetItems" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="BudgetItem" inverseName="project" inverseEntity="BudgetItem"/>
+        <relationship name="calendarTasks" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CalendarTask" inverseName="project" inverseEntity="CalendarTask"/>
+        <relationship name="contractors" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Contractor" inverseName="project" inverseEntity="Contractor"/>
+        <relationship name="photos" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ProjectPhoto" inverseName="project" inverseEntity="ProjectPhoto"/>
+        <relationship name="stages" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Stage" inverseName="project" inverseEntity="Stage"/>
+    </entity>
+    <entity name="ProjectPhoto" representedClassName=".ProjectPhoto" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="imageData" attributeType="Binary"/>
+        <attribute name="isBeforePhoto" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="note" optional="YES" attributeType="String"/>
+        <attribute name="stageName" attributeType="String"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="project" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="photos" inverseEntity="Project"/>
+    </entity>
+    <entity name="Stage" representedClassName=".Stage" syncable="YES">
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isCompleted" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="order" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="project" maxCount="1" deletionRule="Nullify" destinationEntity="Project" inverseName="stages" inverseEntity="Project"/>
+    </entity>
+</model>

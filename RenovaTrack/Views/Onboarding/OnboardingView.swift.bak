@@ -1,0 +1,462 @@
+import SwiftUI
+
+// MARK: - Onboarding Data
+struct OnboardingPageData {
+    let title: String
+    let subtitle: String
+    let accentColor: Color
+    let illustration: AnyView
+}
+
+// MARK: - Main Onboarding View
+struct OnboardingView: View {
+    @AppStorage("hasSeenOnboarding") var hasSeenOnboarding = false
+    @State private var currentPage = 0
+    @State private var dragOffset: CGFloat = 0
+    @State private var animateIllustration = false
+
+    let pages: [OnboardingPageData] = [
+        OnboardingPageData(
+            title: "Plan Every Stage",
+            subtitle: "Break your renovation into phases—from demolition to final décor—and track every step with precision.",
+            accentColor: Color(hex: "E07B54"),
+            illustration: AnyView(StagesIllustration())
+        ),
+        OnboardingPageData(
+            title: "Budget with Clarity",
+            subtitle: "See planned vs. actual spend per category. Never get surprised by overruns again.",
+            accentColor: Color(hex: "C9A84C"),
+            illustration: AnyView(BudgetIllustration())
+        ),
+        OnboardingPageData(
+            title: "Capture the Journey",
+            subtitle: "Take before & after photos for every stage. Your renovation story, beautifully documented.",
+            accentColor: Color(hex: "4CAF84"),
+            illustration: AnyView(PhotoIllustration())
+        ),
+        OnboardingPageData(
+            title: "Never Miss a Deadline",
+            subtitle: "Schedule tasks, get smart reminders, and keep every contractor on track—all in one place.",
+            accentColor: Color(hex: "6B9EFF"),
+            illustration: AnyView(CalendarIllustration())
+        )
+    ]
+
+    var body: some View {
+        ZStack {
+            Color(hex: "1A1A2E").ignoresSafeArea()
+
+            // Background glow for current page
+            Circle()
+                .fill(pages[currentPage].accentColor.opacity(0.07))
+                .frame(width: 500, height: 500)
+                .offset(y: -100)
+                .animation(.easeInOut(duration: 0.5), value: currentPage)
+
+            VStack(spacing: 0) {
+                // Skip button
+                HStack {
+                    Spacer()
+                    if currentPage < pages.count - 1 {
+                        Button("Skip") {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                hasSeenOnboarding = true
+                            }
+                        }
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.35))
+                        .padding(.trailing, 24)
+                        .padding(.top, 16)
+                    }
+                }
+                .frame(height: 48)
+
+                // Pages
+                GeometryReader { geo in
+                    HStack(spacing: 0) {
+                        ForEach(0..<pages.count, id: \.self) { i in
+                            OnboardingPageView(
+                                page: pages[i],
+                                isActive: i == currentPage
+                            )
+                            .frame(width: geo.size.width)
+                        }
+                    }
+                    .offset(x: CGFloat(-currentPage) * geo.size.width + dragOffset)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentPage)
+                    .gesture(
+                        DragGesture()
+                            .onChanged { val in
+                                dragOffset = val.translation.width * 0.6
+                            }
+                            .onEnded { val in
+                                let threshold: CGFloat = 55
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    if val.translation.width < -threshold, currentPage < pages.count - 1 {
+                                        currentPage += 1
+                                    } else if val.translation.width > threshold, currentPage > 0 {
+                                        currentPage -= 1
+                                    }
+                                    dragOffset = 0
+                                }
+                            }
+                    )
+                }
+
+                // Bottom controls
+                VStack(spacing: 28) {
+                    // Page indicators
+                    HStack(spacing: 7) {
+                        ForEach(0..<pages.count, id: \.self) { i in
+                            Capsule()
+                                .fill(i == currentPage ? pages[currentPage].accentColor : Color.white.opacity(0.2))
+                                .frame(width: i == currentPage ? 28 : 8, height: 8)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPage)
+                        }
+                    }
+
+                    // CTA Button
+                    Button {
+                        if currentPage < pages.count - 1 {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                currentPage += 1
+                            }
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.35)) {
+                                hasSeenOnboarding = true
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text(currentPage < pages.count - 1 ? "Continue" : "Start Renovating")
+                                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            Image(systemName: currentPage < pages.count - 1 ? "arrow.right" : "checkmark")
+                                .font(.system(size: 15, weight: .bold))
+                        }
+                        .foregroundColor(Color(hex: "1A1A2E"))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 58)
+                        .background(
+                            LinearGradient(
+                                colors: [pages[currentPage].accentColor,
+                                         pages[currentPage].accentColor.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(18)
+                        .shadow(color: pages[currentPage].accentColor.opacity(0.45), radius: 14, y: 7)
+                    }
+                    .buttonStyle(SpringButtonStyle())
+                    .padding(.horizontal, 28)
+                    .animation(.easeInOut(duration: 0.3), value: currentPage)
+                }
+                .padding(.bottom, 52)
+            }
+        }
+    }
+}
+
+// MARK: - Page View
+struct OnboardingPageView: View {
+    let page: OnboardingPageData
+    let isActive: Bool
+
+    @State private var illustrationScale: CGFloat = 0.82
+    @State private var illustrationOpacity: Double = 0.5
+    @State private var textOffset: CGFloat = 24
+    @State private var textOpacity: Double = 0
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Illustration container
+            ZStack {
+                Circle()
+                    .fill(page.accentColor.opacity(0.08))
+                    .frame(width: 270, height: 270)
+
+                Circle()
+                    .stroke(page.accentColor.opacity(0.15), lineWidth: 1)
+                    .frame(width: 270, height: 270)
+
+                page.illustration
+            }
+            .scaleEffect(illustrationScale)
+            .opacity(illustrationOpacity)
+
+            Spacer().frame(height: 52)
+
+            VStack(spacing: 14) {
+                Text(page.title)
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(hex: "F5EFE6"))
+                    .multilineTextAlignment(.center)
+
+                Text(page.subtitle)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(.white.opacity(0.58))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(5)
+                    .padding(.horizontal, 36)
+            }
+            .offset(y: textOffset)
+            .opacity(textOpacity)
+
+            Spacer()
+        }
+        .onChange(of: isActive) { active in
+            if active {
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.72)) {
+                    illustrationScale = 1.0
+                    illustrationOpacity = 1.0
+                }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.08)) {
+                    textOffset = 0
+                    textOpacity = 1.0
+                }
+            } else {
+                illustrationScale = 0.82
+                illustrationOpacity = 0.5
+                textOffset = 24
+                textOpacity = 0
+            }
+        }
+        .onAppear {
+            if isActive {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.72).delay(0.1)) {
+                    illustrationScale = 1.0
+                    illustrationOpacity = 1.0
+                }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.25)) {
+                    textOffset = 0
+                    textOpacity = 1.0
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Illustrations
+
+struct StagesIllustration: View {
+    @State private var animate = false
+    let labels = ["Demolition", "Rough-in", "Electrical", "Plumbing", "Finishing"]
+    let checked = [true, true, true, false, false]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            ForEach(0..<5, id: \.self) { i in
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(checked[i] ? Color(hex: "E07B54") : Color.white.opacity(0.08))
+                            .frame(width: 28, height: 28)
+                        if checked[i] {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .scaleEffect(animate ? 1 : 0.8)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.6).delay(Double(i) * 0.07), value: animate)
+
+                    Text(labels[i])
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(checked[i] ? Color(hex: "F5EFE6") : .white.opacity(0.35))
+                        .strikethrough(checked[i])
+
+                    Spacer()
+                }
+                .padding(.horizontal, 28)
+            }
+
+            // Progress bar
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Progress").font(.system(size: 11)).foregroundColor(.white.opacity(0.4))
+                    Spacer()
+                    Text("60%").font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundColor(Color(hex: "E07B54"))
+                }
+                GeometryReader { g in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.white.opacity(0.08)).frame(height: 6)
+                        Capsule()
+                            .fill(LinearGradient(colors: [Color(hex: "E07B54"), Color(hex: "C9A84C")], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: animate ? g.size.width * 0.6 : 0, height: 6)
+                            .animation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.3), value: animate)
+                    }
+                }.frame(height: 6)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 4)
+        }
+        .onAppear { animate = true }
+    }
+}
+
+struct BudgetIllustration: View {
+    @State private var animate = false
+    let categories: [(String, Double, Double)] = [
+        ("Materials", 0.78, Color(hex: "C9A84C").hashValue),
+        ("Labor",     0.52, Color(hex: "E07B54").hashValue),
+        ("Furniture", 0.30, Color(hex: "4CAF84").hashValue)
+    ]
+
+    var body: some View {
+        VStack(spacing: 18) {
+            // Mini card header
+            HStack {
+                Image(systemName: "dollarsign.circle.fill").foregroundColor(Color(hex: "C9A84C"))
+                Text("Budget Overview").font(.system(size: 13, weight: .semibold)).foregroundColor(Color(hex: "F5EFE6"))
+                Spacer()
+                Text("$18,400").font(.system(size: 13, weight: .bold, design: .monospaced)).foregroundColor(Color(hex: "C9A84C"))
+            }.padding(.horizontal, 24)
+
+            ForEach(0..<categories.count, id: \.0) { i in
+                let cat = categories[i]
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(cat.0).font(.system(size: 13, weight: .medium)).foregroundColor(Color(hex: "F5EFE6"))
+                        Spacer()
+                        Text("\(Int(cat.1 * 100))%")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(i == 0 ? Color(hex: "C9A84C") : i == 1 ? Color(hex: "E07B54") : Color(hex: "4CAF84"))
+                    }
+                    GeometryReader { g in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.white.opacity(0.07)).frame(height: 8)
+                            Capsule()
+                                .fill(i == 0
+                                      ? LinearGradient(colors: [Color(hex: "C9A84C"), Color(hex: "E07B54")], startPoint: .leading, endPoint: .trailing)
+                                      : i == 1
+                                      ? LinearGradient(colors: [Color(hex: "E07B54"), Color(hex: "C9A84C")], startPoint: .leading, endPoint: .trailing)
+                                      : LinearGradient(colors: [Color(hex: "4CAF84"), Color(hex: "6B9EFF")], startPoint: .leading, endPoint: .trailing))
+                                .frame(width: animate ? g.size.width * cat.1 : 0, height: 8)
+                                .animation(.spring(response: 0.7, dampingFraction: 0.7).delay(Double(i) * 0.12), value: animate)
+                        }
+                    }.frame(height: 8)
+                }
+                .padding(.horizontal, 24)
+            }
+        }
+        .onAppear { animate = true }
+    }
+}
+
+struct PhotoIllustration: View {
+    @State private var animate = false
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ForEach([(true, "Before", Color.gray.opacity(0.4)),
+                     (false, "After", Color(hex: "4CAF84"))], id: \.1) { isBefore, label, color in
+                VStack(spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(isBefore ? Color.white.opacity(0.07) : Color(hex: "4CAF84").opacity(0.18))
+                            .frame(width: 100, height: 120)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(color.opacity(0.4), lineWidth: 1)
+                            )
+
+                        VStack(spacing: 6) {
+                            Image(systemName: isBefore ? "photo" : "photo.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(isBefore ? .white.opacity(0.25) : Color(hex: "4CAF84"))
+                            if !isBefore {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color(hex: "C9A84C"))
+                                    .scaleEffect(animate ? 1 : 0)
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.4), value: animate)
+                            }
+                        }
+                    }
+                    .scaleEffect(animate ? 1 : 0.85)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.65).delay(isBefore ? 0 : 0.15), value: animate)
+
+                    Text(label)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(isBefore ? .white.opacity(0.4) : Color(hex: "4CAF84"))
+                }
+            }
+        }
+        .onAppear { animate = true }
+    }
+}
+
+struct CalendarIllustration: View {
+    @State private var animate = false
+
+    let days: [(String, Color?)] = [
+        ("", nil), ("", nil), ("1", nil), ("2", Color(hex:"6B9EFF")), ("3", nil), ("4", Color(hex:"4CAF84")), ("5", nil),
+        ("6", nil), ("7", Color(hex:"E05454")), ("8", nil), ("9", Color(hex:"6B9EFF")), ("10", nil), ("11", nil), ("12", nil)
+    ]
+
+    var rows: [[(String, Color?)]] {
+        stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<min($0+7, days.count)]) }
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            // Month header
+            HStack {
+                Image(systemName: "chevron.left").font(.system(size: 12)).foregroundColor(.white.opacity(0.3))
+                Spacer()
+                Text("February 2026")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(hex: "F5EFE6"))
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 12)).foregroundColor(.white.opacity(0.3))
+            }.padding(.horizontal, 20)
+
+            // Day headers
+            HStack {
+                ForEach(["Mo","Tu","We","Th","Fr","Sa","Su"], id: \.self) { d in
+                    Text(d).font(.system(size: 10, weight: .bold)).foregroundColor(.white.opacity(0.3)).frame(maxWidth: .infinity)
+                }
+            }.padding(.horizontal, 12)
+
+            // Days grid
+            ForEach(0..<rows.count, id: \.self) { r in
+                HStack {
+                    ForEach(0..<rows[r].count, id: \.self) { c in
+                        let day = rows[r][c]
+                        ZStack {
+                            if day.0 == "9" {
+                                Circle().fill(Color(hex: "6B9EFF").opacity(0.25)).frame(width: 30, height: 30)
+                            }
+                            VStack(spacing: 2) {
+                                Text(day.0).font(.system(size: 12, weight: day.0 == "9" ? .bold : .regular))
+                                    .foregroundColor(day.0 == "9" ? Color(hex: "6B9EFF") : Color(hex: "F5EFE6"))
+                                if let color = day.1 {
+                                    Circle().fill(color).frame(width: 4, height: 4)
+                                        .scaleEffect(animate ? 1 : 0)
+                                        .animation(.spring(response: 0.3, dampingFraction: 0.6).delay(Double(r) * 0.08 + Double(c) * 0.04), value: animate)
+                                }
+                            }
+                        }.frame(maxWidth: .infinity)
+                    }
+                }.padding(.horizontal, 12)
+            }
+
+            // Legend
+            HStack(spacing: 14) {
+                ForEach([("Urgent", Color(hex: "E05454")), ("Planned", Color(hex: "6B9EFF")), ("Done", Color(hex: "4CAF84"))], id: \.0) { item in
+                    HStack(spacing: 4) {
+                        Circle().fill(item.1).frame(width: 6, height: 6)
+                        Text(item.0).font(.system(size: 10)).foregroundColor(.white.opacity(0.4))
+                    }
+                }
+            }
+        }
+        .onAppear { animate = true }
+    }
+}
+
+#Preview {
+    OnboardingView()
+}
