@@ -13,8 +13,8 @@ workflows:
         APP_STORE_CONNECT_KEY: renova_track_key
         APP_STORE_APPLE_ID: 6760123633
         BUNDLE_ID: "com.trackingrenovation.RenovaTrack"
-        XCODE_PROJECT: "SmartEstimator.xcodeproj"
-        XCODE_SCHEME: "SmartEstimator"
+        XCODE_PROJECT: "RenovaTrack.xcodeproj"
+        XCODE_SCHEME: "RenovaTrack"
     scripts:
       - name: Clean and Resolve SPM Dependencies
         script: |
